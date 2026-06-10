@@ -90,7 +90,7 @@
   button.ghost:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
 
   /* ---------- gauge ---------- */
-  .gauge-wrap{position:relative;padding:34px 0 40px;}
+  .gauge-wrap{position:relative;padding:18px 0 36px;}
   #gauge{
     position:relative;width:100%;height:440px;cursor:crosshair;
   }
@@ -400,19 +400,16 @@
   }
 
   function render(){
-    renderScale();
     dotsEl.innerHTML = "";
     itemsEl.innerHTML = "";
     leaders.innerHTML = "";
 
     countEl.textContent = data.length + (data.length===1?" entry":" entries") + " on record";
 
-    var midY = trackMidY();
-    var topT = trackTopY();
     var ns = "http://www.w3.org/2000/svg";
-
     var GAP = 10;       // min horizontal gap between labels in a lane
     var LANE_H = 34;    // vertical distance between stacked lanes
+    var TOP_PAD = 8;    // breathing room above the topmost label
     var minX = 4, maxX = gauge.clientWidth - 4;
     var lanesRight = []; // rightmost occupied edge per lane
 
@@ -421,10 +418,12 @@
       return {name:d.name, v:d.v, idx:idx, x:valToX(d.v)};
     }).sort(function(a,b){ return a.x - b.x; });
 
+    // ---- pass 1: build + measure labels, assign lanes (independent of track Y) ----
+    var placed = [];
+    var maxLane = 0, maxH = 0;
+
     entries.forEach(function(e){
       var color = valColor(e.v);
-
-      // build the label first so we can measure it
       var item = document.createElement("div");
       item.className = "item";
       item.style.borderLeftColor = color;
@@ -456,33 +455,46 @@
       var half = w/2;
       var cx = Math.max(minX+half, Math.min(maxX-half, e.x));
 
-      // assign to the lowest lane with horizontal room
       var lane = 0;
       while(lane < lanesRight.length && lanesRight[lane] > cx - half - GAP) lane++;
       lanesRight[lane] = cx + half;
 
-      var ly = topT - 12 - h - lane*LANE_H; // top edge of the label
-      var labelBottom = ly + h;
+      if(lane > maxLane) maxLane = lane;
+      if(h > maxH) maxH = h;
+      placed.push({item:item, x:e.x, cx:cx, lane:lane, h:h, color:color});
+    });
 
-      item.style.left = cx+"px";
-      item.style.top = ly+"px";
-      item.style.visibility = "visible";
+    // ---- size the gauge to fit: track sits just below the label stack ----
+    var newTop = TOP_PAD + maxH + maxLane*LANE_H + 12;
+    track.style.top = newTop + "px";
+    var topT = track.offsetTop;            // reflects the value just set
+    var midY = trackMidY();
+    gauge.style.height = (topT + trackH() + 58) + "px"; // room for numbers + bands
 
-      // leader: track dot -> label bottom-center
+    renderScale();
+
+    // ---- pass 2: position labels, leaders, dots ----
+    placed.forEach(function(p){
+      var ly = topT - 12 - p.h - p.lane*LANE_H; // top edge of the label
+      var labelBottom = ly + p.h;
+
+      p.item.style.left = p.cx+"px";
+      p.item.style.top = ly+"px";
+      p.item.style.visibility = "visible";
+
       var mid = (midY + labelBottom)/2;
       var path = document.createElementNS(ns,"path");
-      path.setAttribute("d","M"+e.x+","+midY+" C"+e.x+","+mid+" "+cx+","+mid+" "+cx+","+labelBottom);
+      path.setAttribute("d","M"+p.x+","+midY+" C"+p.x+","+mid+" "+p.cx+","+mid+" "+p.cx+","+labelBottom);
       path.setAttribute("fill","none");
       path.setAttribute("stroke","rgba(21,23,27,0.30)");
       path.setAttribute("stroke-width","1");
       leaders.appendChild(path);
 
-      // dot on the track
       var dot = document.createElement("div");
       dot.className = "dot";
-      dot.style.left = e.x+"px";
+      dot.style.left = p.x+"px";
       dot.style.top = midY+"px";
-      dot.style.background = color;
+      dot.style.background = p.color;
       dotsEl.appendChild(dot);
     });
   }
