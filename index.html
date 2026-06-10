@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Tech Bullshit Scale — a calibrated instrument</title>
+<meta name="description" content="A calibrated instrument for measuring bullshit in tech concepts, from 0 (verifiable) to 10 (pure bullshit). Click the scale to log your own readings." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E7E9ED;
+    --paper-2:#DDE0E6;
+    --panel:#EEF0F3;
+    --ink:#15171B;
+    --ink-soft:#5A616C;
+    --ink-faint:#8A909B;
+    --hair:rgba(21,23,27,0.14);
+    --hair-strong:rgba(21,23,27,0.30);
+    --display:"Space Grotesk",system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+    --body:"Inter",system-ui,sans-serif;
+    --maxw:1080px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--body);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+    /* faint engineering grid */
+    background-image:
+      linear-gradient(var(--hair) 1px,transparent 1px),
+      linear-gradient(90deg,var(--hair) 1px,transparent 1px);
+    background-size:34px 34px;
+    background-position:-1px -1px;
+  }
+
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px;}
+
+  /* ---------- header ---------- */
+  header{border-bottom:1.5px solid var(--ink);margin-top:8px;}
+  .topline{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--ink-soft);
+    padding:14px 0 10px;border-bottom:1px solid var(--hair);
+  }
+  .topline .sn{color:var(--ink-faint);}
+  .masthead{padding:22px 0 18px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:18px 28px;justify-content:space-between;}
+  h1{
+    font-family:var(--display);font-weight:700;
+    font-size:clamp(38px,8vw,76px);line-height:.92;letter-spacing:-.02em;
+    margin:0;text-transform:uppercase;
+  }
+  h1 .bs{display:block;color:var(--ink);}
+  .subtitle{
+    font-family:var(--body);font-size:14px;color:var(--ink-soft);
+    max-width:46ch;margin:6px 0 0;
+  }
+  /* live readout */
+  .readout{
+    font-family:var(--mono);text-align:right;min-width:200px;
+    border:1.5px solid var(--ink);background:var(--panel);
+    padding:10px 14px;align-self:flex-end;
+  }
+  .readout .lbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);display:block;}
+  .readout .val{font-size:30px;font-weight:700;letter-spacing:-.01em;line-height:1.1;display:block;}
+  .readout .unit{font-size:12px;color:var(--ink-soft);}
+
+  /* ---------- instructions strip ---------- */
+  .strip{
+    display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;
+    padding:14px 0;border-bottom:1px solid var(--hair);
+    font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--ink-soft);
+  }
+  .strip .hint b{color:var(--ink);}
+  .strip .spacer{flex:1;}
+  button.ghost{
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    background:transparent;border:1px solid var(--hair-strong);color:var(--ink);
+    padding:7px 12px;cursor:pointer;transition:background .15s,border-color .15s;
+  }
+  button.ghost:hover{background:var(--panel);border-color:var(--ink);}
+  button.ghost:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+
+  /* ---------- gauge ---------- */
+  .gauge-wrap{position:relative;padding:34px 0 40px;}
+  #gauge{
+    position:relative;width:100%;height:440px;cursor:crosshair;
+  }
+  /* horizontal track */
+  .track{
+    position:absolute;left:0;right:0;height:22px;top:330px;
+    border:1.5px solid var(--ink);
+    background:linear-gradient(to right,
+      #1F7A5C 0%, #4E9E5A 33%, #C7A327 50%, #D2792E 66%, #C0432E 83%, #9E2B22 100%);
+  }
+  /* band boundary separators sitting on the track */
+  .band-sep{position:absolute;width:1px;background:rgba(231,233,237,.6);transform:translateX(-.5px);}
+
+  /* numbers + bands live in full-width layers below the track */
+  .col-nums{position:absolute;left:0;right:0;top:0;height:100%;pointer-events:none;z-index:3;}
+  .tick-num{
+    position:absolute;transform:translateX(-50%);
+    font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ink);
+  }
+  .col-bands{position:absolute;left:0;right:0;top:0;height:100%;pointer-events:none;}
+  .band-lab{
+    position:absolute;transform:translateX(-50%);text-align:center;white-space:nowrap;
+    font-family:var(--mono);font-size:10px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--ink-soft);line-height:1.3;
+  }
+  .band-lab span{display:block;color:var(--ink-faint);font-size:9px;}
+
+  /* hover line (vertical) + bubble */
+  .hover-line{position:absolute;top:0;width:0;border-left:1px dashed var(--hair-strong);display:none;pointer-events:none;z-index:5;}
+  .hover-bubble{
+    position:absolute;transform:translateX(-50%);
+    font-family:var(--mono);font-size:11px;font-weight:700;
+    background:var(--ink);color:var(--paper);padding:3px 7px;display:none;
+    pointer-events:none;z-index:6;white-space:nowrap;letter-spacing:.04em;
+  }
+
+  /* svg leaders */
+  #leaders{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;}
+
+  /* track dots */
+  .dot{
+    position:absolute;width:11px;height:11px;border-radius:50%;
+    border:2px solid var(--paper);transform:translate(-50%,-50%);
+    z-index:3;box-shadow:0 0 0 1px var(--hair-strong);
+  }
+
+  /* item labels (right column) */
+  .item{
+    position:absolute;transform:translateX(-50%);
+    background:var(--panel);border:1px solid var(--hair-strong);
+    border-left-width:4px;padding:6px 9px;z-index:4;
+    display:flex;align-items:center;gap:10px;min-width:0;max-width:240px;
+    transition:box-shadow .15s,transform .08s;
+  }
+  .item:hover{box-shadow:2px 3px 0 var(--hair);}
+  .item .name{
+    font-family:var(--display);font-weight:500;font-size:15px;color:var(--ink);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .item .num{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ink-soft);margin-left:auto;}
+  .item .kill{
+    border:none;background:transparent;color:var(--ink-faint);cursor:pointer;
+    font-family:var(--mono);font-size:13px;line-height:1;padding:2px 2px;opacity:0;transition:opacity .12s,color .12s;
+  }
+  .item:hover .kill,.item:focus-within .kill{opacity:1;}
+  .item .kill:hover{color:#9E2B22;}
+  .item .kill:focus-visible{outline:2px solid var(--ink);outline-offset:1px;opacity:1;}
+
+  /* add input */
+  .adder{
+    position:absolute;transform:translateX(-50%);z-index:9;
+    background:var(--ink);color:var(--paper);padding:9px 10px;
+    display:none;align-items:center;gap:8px;box-shadow:3px 4px 0 var(--hair-strong);
+  }
+  .adder .vtag{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--paper);background:rgba(255,255,255,.14);padding:3px 6px;white-space:nowrap;}
+  .adder input{
+    font-family:var(--display);font-size:15px;border:none;background:transparent;
+    color:var(--paper);outline:none;width:180px;border-bottom:1px solid rgba(255,255,255,.4);padding:2px 0;
+  }
+  .adder input::placeholder{color:rgba(255,255,255,.5);}
+  .adder button{
+    font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    border:1px solid rgba(255,255,255,.5);background:transparent;color:var(--paper);
+    padding:5px 9px;cursor:pointer;
+  }
+  .adder button:hover{background:rgba(255,255,255,.15);}
+
+  /* ---------- footer ---------- */
+  footer{border-top:1.5px solid var(--ink);padding:16px 0 40px;}
+  .footnote{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--ink-faint);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px 24px;
+  }
+  .disclaimer{font-family:var(--body);font-size:12.5px;color:var(--ink-soft);margin-top:10px;max-width:70ch;text-transform:none;letter-spacing:normal;}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:720px){
+    #gauge{height:460px;}
+    .track{top:360px;}
+    .item{max-width:150px;}
+    .item .name{font-size:13px;}
+    .item .num{font-size:12px;}
+    .tick-num{font-size:11px;}
+    .band-lab{font-size:8.5px;}
+    .band-lab span{display:none;}
+    .readout{min-width:0;width:100%;text-align:left;}
+    .masthead{gap:14px;}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="topline">
+      <span>Tech B.S. Scale · Mk. II · field instrument</span>
+      <span class="sn">cal. 0–10 BSU</span>
+    </div>
+    <div class="masthead">
+      <div>
+        <h1><span class="bs">Tech Bullshit</span><span class="bs">Scale</span></h1>
+        <p class="subtitle">A calibrated instrument for the measurement of bullshit in tech. Concepts, stacks and buzzwords are plotted from <b>0 — verifiable</b> to <b>10 — pure bullshit</b>. Readings are subjective by design.</p>
+      </div>
+      <div class="readout" id="readout">
+        <span class="lbl">Reading</span>
+        <span class="val" id="readVal">—</span>
+        <span class="unit">BSU · hover the scale</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="strip">
+    <span class="hint">Click the scale to <b>log a reading</b></span>
+    <span class="hint" id="count">0 entries on record</span>
+    <span class="spacer"></span>
+    <button class="ghost" id="resetBtn">Reset calibration</button>
+  </div>
+
+  <div class="gauge-wrap">
+    <div id="gauge">
+      <div class="col-bands" id="bands"></div>
+      <div class="col-nums" id="nums"></div>
+      <div class="track" id="track"></div>
+      <div class="hover-line" id="hoverLine"></div>
+      <div class="hover-bubble" id="hoverBubble"></div>
+      <svg id="leaders" preserveAspectRatio="none"></svg>
+      <div id="dots"></div>
+      <div id="items"></div>
+      <div class="adder" id="adder">
+        <span class="vtag" id="adderTag">0.0</span>
+        <input id="adderInput" type="text" placeholder="Name this thing…" maxlength="48" autocomplete="off" />
+        <button id="adderSave">Log</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footnote">
+      <span>No bullshit was harmed in calibration</span>
+      <span>Readings stored locally on this device</span>
+    </div>
+    <p class="disclaimer">This is satire, not a verdict. Every placement is an opinion — including the factory defaults, which you are encouraged to disagree with loudly in a standup somewhere. Add your own readings, delete mine, recalibrate the whole stack. Open protocols and open source sit near zero here for a reason; the buzzword soup at the far end is up for debate.</p>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- factory calibration (seed data) ----
+  var SEED = [
+    {name:"TLS / HTTPS", v:0.4},
+    {name:"The open internet (TCP/IP)", v:1.1},
+    {name:"Linux / open source", v:1.5},
+    {name:"SQL databases", v:2.2},
+    {name:"Public cloud", v:3.3},
+    {name:"Kubernetes", v:5.2},
+    {name:"Agile / Scrum", v:5.9},
+    {name:"Low-code / no-code", v:6.9},
+    {name:"\"Digital transformation\"", v:7.6},
+    {name:"\"AI-powered everything\"", v:8.3},
+    {name:"Bitcoin price targets", v:8.7},
+    {name:"Web3", v:9.2},
+    {name:"The metaverse", v:9.6},
+    {name:"NFTs", v:9.8}
+  ];
+
+  var STORE_KEY = "bullshit-scale:v2";
+
+  // storage with graceful fallback (works when self-hosted; degrades in sandbox)
+  var mem = null;
+  function load(){
+    try{
+      var raw = window.localStorage.getItem(STORE_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){ if(mem) return mem; }
+    return SEED.map(function(d){return {name:d.name, v:d.v};});
+  }
+  function save(data){
+    mem = data;
+    try{ window.localStorage.setItem(STORE_KEY, JSON.stringify(data)); }catch(e){}
+  }
+
+  var data = load();
+
+  // ---- color interpolation matching the track gradient ----
+  var STOPS = [
+    {v:0,  c:[31,122,92]},
+    {v:3.3,c:[78,158,90]},
+    {v:5,  c:[199,163,39]},
+    {v:6.6,c:[210,121,46]},
+    {v:8.3,c:[192,67,46]},
+    {v:10, c:[158,43,34]}
+  ];
+  function valColor(v){
+    v = Math.max(0, Math.min(10, v));
+    for(var i=0;i<STOPS.length-1;i++){
+      var a=STOPS[i], b=STOPS[i+1];
+      if(v>=a.v && v<=b.v){
+        var t=(v-a.v)/(b.v-a.v);
+        var r=Math.round(a.c[0]+(b.c[0]-a.c[0])*t);
+        var g=Math.round(a.c[1]+(b.c[1]-a.c[1])*t);
+        var bl=Math.round(a.c[2]+(b.c[2]-a.c[2])*t);
+        return "rgb("+r+","+g+","+bl+")";
+      }
+    }
+    return "rgb(158,43,34)";
+  }
+
+  // ---- elements ----
+  var gauge = document.getElementById("gauge");
+  var bandsEl = document.getElementById("bands");
+  var numsEl = document.getElementById("nums");
+  var track = document.getElementById("track");
+  var leaders = document.getElementById("leaders");
+  var dotsEl = document.getElementById("dots");
+  var itemsEl = document.getElementById("items");
+  var hoverLine = document.getElementById("hoverLine");
+  var hoverBubble = document.getElementById("hoverBubble");
+  var readVal = document.getElementById("readVal");
+  var countEl = document.getElementById("count");
+  var adder = document.getElementById("adder");
+  var adderTag = document.getElementById("adderTag");
+  var adderInput = document.getElementById("adderInput");
+  var adderSave = document.getElementById("adderSave");
+  var resetBtn = document.getElementById("resetBtn");
+
+  var BANDS = [
+    {lo:0,hi:2,  t:"Verifiable", s:"trust it"},
+    {lo:2,hi:4,  t:"Mostly sound", s:"minor caveats"},
+    {lo:4,hi:6,  t:"Contested", s:"depends who's asking"},
+    {lo:6,hi:8,  t:"Oversold", s:"hype detected"},
+    {lo:8,hi:10, t:"Pure bullshit", s:"abandon hope"}
+  ];
+
+  var pendingValue = null; // value being added
+
+  // ---- geometry (horizontal) ----
+  function trackLeft(){ return track.offsetLeft; }
+  function trackWidth(){ return track.offsetWidth; }
+  function trackTopY(){ return track.offsetTop; }
+  function trackH(){ return track.offsetHeight; }
+  function trackMidY(){ return track.offsetTop + track.offsetHeight/2; }
+  function valToX(v){ return trackLeft() + (v/10) * trackWidth(); }
+  function xToVal(x){
+    var v = (x - trackLeft()) / trackWidth() * 10;
+    return Math.max(0, Math.min(10, v));
+  }
+
+  function renderScale(){
+    numsEl.innerHTML = "";
+    bandsEl.innerHTML = "";
+    var below = trackTopY() + trackH();
+    // tick numbers
+    for(var i=0;i<=10;i++){
+      var num = document.createElement("div");
+      num.className = "tick-num";
+      num.style.left = valToX(i)+"px";
+      num.style.top = (below + 9)+"px";
+      num.textContent = i;
+      numsEl.appendChild(num);
+    }
+    // band boundary separators on the track
+    [2,4,6,8].forEach(function(bv){
+      var sep = document.createElement("div");
+      sep.className = "band-sep";
+      sep.style.left = valToX(bv)+"px";
+      sep.style.top = trackTopY()+"px";
+      sep.style.height = trackH()+"px";
+      numsEl.appendChild(sep);
+    });
+    // band labels
+    BANDS.forEach(function(b){
+      var el = document.createElement("div");
+      el.className = "band-lab";
+      el.style.left = valToX((b.lo+b.hi)/2)+"px";
+      el.style.top = (below + 30)+"px";
+      el.innerHTML = b.t + "<span>"+b.s+"</span>";
+      bandsEl.appendChild(el);
+    });
+  }
+
+  function render(){
+    renderScale();
+    dotsEl.innerHTML = "";
+    itemsEl.innerHTML = "";
+    leaders.innerHTML = "";
+
+    countEl.textContent = data.length + (data.length===1?" entry":" entries") + " on record";
+
+    var midY = trackMidY();
+    var topT = trackTopY();
+    var ns = "http://www.w3.org/2000/svg";
+
+    var GAP = 10;       // min horizontal gap between labels in a lane
+    var LANE_H = 34;    // vertical distance between stacked lanes
+    var minX = 4, maxX = gauge.clientWidth - 4;
+    var lanesRight = []; // rightmost occupied edge per lane
+
+    // sort by value so lane packing reads left-to-right
+    var entries = data.map(function(d,idx){
+      return {name:d.name, v:d.v, idx:idx, x:valToX(d.v)};
+    }).sort(function(a,b){ return a.x - b.x; });
+
+    entries.forEach(function(e){
+      var color = valColor(e.v);
+
+      // build the label first so we can measure it
+      var item = document.createElement("div");
+      item.className = "item";
+      item.style.borderLeftColor = color;
+      item.style.visibility = "hidden";
+      item.style.left = "0px"; item.style.top = "0px";
+
+      var name = document.createElement("span");
+      name.className = "name";
+      name.textContent = e.name;
+      var num = document.createElement("span");
+      num.className = "num";
+      num.textContent = e.v.toFixed(1);
+      var kill = document.createElement("button");
+      kill.className = "kill";
+      kill.setAttribute("aria-label","Remove "+e.name);
+      kill.textContent = "✕";
+      (function(targetIdx){
+        kill.addEventListener("click", function(ev){
+          ev.stopPropagation();
+          data.splice(targetIdx,1);
+          save(data);
+          render();
+        });
+      })(e.idx);
+      item.appendChild(name); item.appendChild(num); item.appendChild(kill);
+      itemsEl.appendChild(item);
+
+      var w = item.offsetWidth, h = item.offsetHeight;
+      var half = w/2;
+      var cx = Math.max(minX+half, Math.min(maxX-half, e.x));
+
+      // assign to the lowest lane with horizontal room
+      var lane = 0;
+      while(lane < lanesRight.length && lanesRight[lane] > cx - half - GAP) lane++;
+      lanesRight[lane] = cx + half;
+
+      var ly = topT - 12 - h - lane*LANE_H; // top edge of the label
+      var labelBottom = ly + h;
+
+      item.style.left = cx+"px";
+      item.style.top = ly+"px";
+      item.style.visibility = "visible";
+
+      // leader: track dot -> label bottom-center
+      var mid = (midY + labelBottom)/2;
+      var path = document.createElementNS(ns,"path");
+      path.setAttribute("d","M"+e.x+","+midY+" C"+e.x+","+mid+" "+cx+","+mid+" "+cx+","+labelBottom);
+      path.setAttribute("fill","none");
+      path.setAttribute("stroke","rgba(21,23,27,0.30)");
+      path.setAttribute("stroke-width","1");
+      leaders.appendChild(path);
+
+      // dot on the track
+      var dot = document.createElement("div");
+      dot.className = "dot";
+      dot.style.left = e.x+"px";
+      dot.style.top = midY+"px";
+      dot.style.background = color;
+      dotsEl.appendChild(dot);
+    });
+  }
+
+  // ---- hover readout ----
+  function onMove(e){
+    var rect = gauge.getBoundingClientRect();
+    var x = e.clientX - rect.left;
+    if(x < trackLeft() || x > trackLeft()+trackWidth()){
+      hoverLine.style.display="none"; hoverBubble.style.display="none";
+      readVal.textContent = "—";
+      return;
+    }
+    var v = xToVal(x);
+    hoverLine.style.display="block";
+    hoverLine.style.left = x+"px";
+    hoverLine.style.height = (trackTopY()+trackH())+"px";
+    hoverBubble.style.display="block";
+    hoverBubble.style.left = x+"px";
+    hoverBubble.style.top = (trackTopY()-24)+"px";
+    hoverBubble.textContent = v.toFixed(1)+" BSU";
+    readVal.textContent = v.toFixed(1);
+  }
+  gauge.addEventListener("mousemove", onMove);
+  gauge.addEventListener("mouseleave", function(){
+    hoverLine.style.display="none"; hoverBubble.style.display="none";
+    readVal.textContent="—";
+  });
+
+  // ---- click to add ----
+  function openAdder(x){
+    var v = xToVal(x);
+    pendingValue = Math.round(v*10)/10;
+    adderTag.textContent = pendingValue.toFixed(1);
+    var cx = Math.max(170, Math.min(gauge.clientWidth-170, x));
+    adder.style.left = cx+"px";
+    adder.style.top = (trackTopY()-44)+"px";
+    adder.style.display = "flex";
+    adderInput.value = "";
+    adderInput.focus();
+  }
+  function closeAdder(){ adder.style.display="none"; pendingValue=null; }
+
+  gauge.addEventListener("click", function(e){
+    // ignore clicks on existing items / adder / kill buttons
+    if(e.target.closest(".item") || e.target.closest(".adder")) return;
+    var rect = gauge.getBoundingClientRect();
+    var x = e.clientX - rect.left;
+    var y = e.clientY - rect.top;
+    if(x < trackLeft()-4 || x > trackLeft()+trackWidth()+4) return;
+    // only react near the scale band (track + numbers), not up in the labels
+    if(y < trackTopY()-12 || y > trackTopY()+trackH()+34) return;
+    openAdder(x);
+  });
+
+  function commitAdd(){
+    var name = adderInput.value.trim();
+    if(!name || pendingValue===null){ closeAdder(); return; }
+    data.push({name:name, v:pendingValue});
+    save(data);
+    closeAdder();
+    render();
+  }
+  adderSave.addEventListener("click", commitAdd);
+  adderInput.addEventListener("keydown", function(e){
+    if(e.key==="Enter"){ e.preventDefault(); commitAdd(); }
+    else if(e.key==="Escape"){ closeAdder(); }
+  });
+  document.addEventListener("click", function(e){
+    if(adder.style.display==="flex" && !e.target.closest(".adder") && !e.target.closest("#gauge")){
+      closeAdder();
+    }
+  });
+
+  // ---- reset ----
+  resetBtn.addEventListener("click", function(){
+    data = SEED.map(function(d){return {name:d.name, v:d.v};});
+    save(data);
+    render();
+  });
+
+  // ---- init + responsive ----
+  function boot(){ render(); }
+  // fonts may shift layout; re-render after load
+  window.addEventListener("load", function(){ setTimeout(render, 60); });
+  var rt;
+  window.addEventListener("resize", function(){
+    closeAdder();
+    clearTimeout(rt); rt=setTimeout(render, 100);
+  });
+  boot();
+})();
+</script>
+</body>
+</html>
